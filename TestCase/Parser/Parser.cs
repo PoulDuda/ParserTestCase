@@ -27,7 +27,7 @@ namespace TestCase.Parser
             return BrowsingContext.New(config);
         }
 
-        public async Task<string> GetCity()
+        private async Task<string> GetCity()
         {
             var context = CreateBrowsingContext();
             var document = await context.OpenAsync(_baseUrl + _uri);
@@ -35,7 +35,7 @@ namespace TestCase.Parser
             return city;
         }
 
-        public async Task<int> GetPages()
+        private async Task<int> GetPages()
         {
             try
             {
@@ -53,7 +53,7 @@ namespace TestCase.Parser
             }
         }
 
-        public async Task<List<string>> ParseAllLinks()
+        private async Task<List<string>> ParseAllLinks()
         {
             List<string> allLinks = new List<string>();
             int pages = await GetPages();
@@ -98,7 +98,7 @@ namespace TestCase.Parser
             return results.SelectMany(x => x).ToList();
         }
 
-        public async Task<List<string>> ParsePage(int page)
+        private async Task<List<string>> ParsePage(int page)
         {
             try
             {
@@ -117,7 +117,7 @@ namespace TestCase.Parser
             }
         }
 
-        public async Task<Product> ParseProduct(string url)
+        private async Task<Product> ParseProduct(string url)
         {
             var context = CreateBrowsingContext();
             var document = await context.OpenAsync(_baseUrl + url);
