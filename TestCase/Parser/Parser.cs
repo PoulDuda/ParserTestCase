@@ -1,4 +1,5 @@
 ﻿using AngleSharp;
+using AngleSharp.Io;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,8 +23,16 @@ namespace TestCase.Parser
 
         private IBrowsingContext CreateBrowsingContext()
         {
-            var config = Configuration.Default.WithDefaultLoader();
+            var config = Configuration.Default.WithDefaultLoader().WithDefaultCookies();
             return BrowsingContext.New(config);
+        }
+
+        public async Task<string> GetCity()
+        {
+            var context = CreateBrowsingContext();
+            var document = await context.OpenAsync(_baseUrl + _uri);
+            string city = document.QuerySelector(".location__current.dropdown__toggler").TextContent.Trim().Replace(" ", "");
+            return city;
         }
 
         public async Task<int> GetPages()
@@ -50,10 +59,7 @@ namespace TestCase.Parser
             int pages = await GetPages();
             try
             {
-                var tasks = Enumerable.Range(1, pages)
-                                  .Select(page => ParsePage(page))
-                                  .ToArray();
-
+                var tasks = Enumerable.Range(1, pages).Select(page => ParsePage(page)).ToList();
                 var results = await Task.WhenAll(tasks);
                 foreach (var result in results)
                 {
@@ -71,9 +77,7 @@ namespace TestCase.Parser
         public async Task<List<Product>> ParseAllProducts()
         {
             var links = await ParseAllLinks();
-            var productChunks = links.Select((link, index) => new { link, index })
-                                     .GroupBy(x => x.index % _numberOfThreads)
-                                     .Select(g => g.Select(x => x.link).ToList())
+            var productChunks = links.Select((link, index) => new { link, index }).GroupBy(x => x.index % _numberOfThreads).Select(g => g.Select(x => x.link).ToList())
                                      .ToList();
 
             var tasks = productChunks.Select(chunk => Task.Run(async () =>
@@ -104,6 +108,7 @@ namespace TestCase.Parser
                 var links = document.QuerySelectorAll(".swiper-container").Select(x => x.GetAttribute("href")).ToList();
                 context.Dispose();
                 return links;
+                
             }
             catch (Exception ex)
             {
@@ -130,7 +135,7 @@ namespace TestCase.Parser
             var product = new Product()
             {
                 Url = _baseUrl + url,
-                Region = document.QuerySelector(".location__current.dropdown__toggler").TextContent.Trim().Replace(" ", ""),
+                Region = await GetCity(),
                 Name = document.QuerySelector(".product-page__header").TextContent.Trim(),
                 Articul = int.Parse(document.QuerySelector(".product-page__article.js-copy-article").TextContent.Replace("Артикул: ", "")),
                 Rating = float.Parse(document.QuerySelector(".rating-stars__value").TextContent.Trim().Replace(".", ",")),
